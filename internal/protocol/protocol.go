@@ -13,26 +13,37 @@ var (
 )
 
 type Resp interface {
+	//Encodes the command to a byte array representation as per RESP
 	Encode() []byte
+	//User readable representation of the command
 	String() string
 }
 
+// SimpleString represents a simple string as defined in Redis' RESP spec.
+// The string transmits a short non-binary strings.
 type SimpleString struct {
 	Data string
 }
 
+// Error represents a simple error as defined in Redis' RESP spec.
+// The error is similar to SimpleString, but is used for error handling.
 type Error struct {
 	Data string
 }
 
+// Integer represents a signed, base-10, 64-bit integer as defined in Redis' RESP spec.
 type Integer struct {
 	Value int64
 }
 
+// BulkString represents a single binary string as defined in Redis' RESP spec.
+// The string can be of any size, and is configured by the Redis config.
 type BulkString struct {
 	Data *string
 }
 
+// Array is an implememtation of the RESP arrays.
+// Some Redis commands that return collections of elements use arrays as their replies.
 type Array struct {
 	Items []Resp
 }
@@ -121,6 +132,7 @@ func Val[T any](ptr *T) T {
 	return *ptr
 }
 
+// Extracts a frame from the provided buffer and returns the amount of bytes read.
 func ExtractFrameFromBuffer(buffer []byte) (Resp, int) {
 	sep := bytes.Index(buffer, messageSeparator)
 	if sep == -1 {

@@ -15,8 +15,15 @@ import (
 func main() {
 	log.SetFlags(0)
 
-	host := flag.String("host", "localhost", "Server hostname, defaults to 'localhost'")
-	port := flag.Int("port", 6379, "Server port, defaults to 6379")
+	host := flag.String("host", "localhost", "Server hostname")
+	port := flag.Int("port", 6379, "Server port")
+
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage: %s [options]\n", os.Args[0])
+		fmt.Fprintln(os.Stderr, "Options:")
+		flag.PrintDefaults()
+	}
+
 	flag.Parse()
 	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", *host, *port))
 	if err != nil {
