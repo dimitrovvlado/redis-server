@@ -4,6 +4,7 @@ import (
 	"flag"
 	"log"
 
+	"github.com/dimitrovvlado/redis-server/internal/datastore"
 	"github.com/dimitrovvlado/redis-server/internal/server"
 )
 
@@ -14,7 +15,9 @@ func main() {
 	port := flag.Int("port", 6379, "Server port")
 	flag.Parse()
 
-	err := server.Serve(*host, *port)
+	ds := datastore.NewDatastore()
+
+	err := server.Serve(*host, *port, ds)
 	if err != nil {
 		log.Fatalf("Failed to start server: %v", err.Error())
 	}

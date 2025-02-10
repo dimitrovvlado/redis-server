@@ -6,10 +6,11 @@ import (
 	"log/slog"
 	"strings"
 
+	"github.com/dimitrovvlado/redis-server/internal/datastore"
 	"github.com/dimitrovvlado/redis-server/internal/protocol"
 )
 
-func HandleCommand(resp protocol.Resp) (protocol.Resp, error) {
+func HandleCommand(resp protocol.Resp, ds *datastore.Datastore) (protocol.Resp, error) {
 	switch resp.(type) {
 	case protocol.Array:
 		a := resp.(protocol.Array)
@@ -21,6 +22,10 @@ func HandleCommand(resp protocol.Resp) (protocol.Resp, error) {
 			return handlePingCommand(args), nil
 		case "echo":
 			return handleEchoCommand(args), nil
+		case "set":
+			return handleSetCommand(args, ds), nil
+		case "get":
+			return handleGetCommand(args, ds), nil
 		default:
 			return handleUnknownCommand(cmdS, args), nil
 		}
@@ -54,4 +59,26 @@ func handleUnknownCommand(c string, args []protocol.Resp) protocol.Resp {
 		argsArr[i] = fmt.Sprintf("'%s'", s)
 	}
 	return protocol.Error{Data: fmt.Sprintf("ERR unknown command '%s', with args beginning with: %s", c, strings.Join(argsArr, " "))}
+}
+
+func handleSetCommand(args []protocol.Resp, ds *datastore.Datastore) protocol.Resp {
+	if len(args) != 2 {
+		return protocol.Error{Data: "ERR wrong number of arguments for 'set' command"}
+	}
+	key := args[0].String()
+	val := args[1].String()
+	ds.Set(key, val)
+	return protocol.SimpleString{Data: "OK"}
+}
+
+func handleGetCommand(args []protocol.Resp, ds *datastore.Datastore) protocol.Resp {
+	if len(args) != 1 {
+		return protocol.Error{Data: "ERR wrong number of arguments for 'get' command"}
+	}
+	key := args[0].String()
+	val, err := ds.Get(key)
+	if err != nil {
+		return protocol.BulkString{Data: nil}
+	}
+	return protocol.BulkString{Data: protocol.Ptr(fmt.Sprintf("%s", val))}
 }

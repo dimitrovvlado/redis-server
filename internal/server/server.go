@@ -8,10 +8,11 @@ import (
 	"net"
 
 	"github.com/dimitrovvlado/redis-server/internal/commands"
+	"github.com/dimitrovvlado/redis-server/internal/datastore"
 	"github.com/dimitrovvlado/redis-server/internal/protocol"
 )
 
-func Serve(host string, port int) error {
+func Serve(host string, port int, ds *datastore.Datastore) error {
 	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", host, port))
 	if err != nil {
 		return err
@@ -22,11 +23,11 @@ func Serve(host string, port int) error {
 		if err != nil {
 			log.Fatalf("Failed to establish a connection with the client: %v", err.Error())
 		}
-		go handleConnection(conn)
+		go handleConnection(conn, ds)
 	}
 }
 
-func handleConnection(conn net.Conn) {
+func handleConnection(conn net.Conn, ds *datastore.Datastore) {
 	buf := make([]byte, 0, 4096)
 	rbuf := make([]byte, 1024)
 	defer conn.Close()
@@ -47,7 +48,7 @@ func handleConnection(conn net.Conn) {
 			buf = append(buf, rbuf[:n]...)
 			frame, size := protocol.ExtractFrameFromBuffer(buf)
 			if frame != nil {
-				result, err := commands.HandleCommand(frame)
+				result, err := commands.HandleCommand(frame, ds)
 				if err != nil {
 					log.Println("Error handling command: ", err)
 				} else {

@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/dimitrovvlado/redis-server/internal/datastore"
 	"github.com/dimitrovvlado/redis-server/internal/protocol"
 )
 
@@ -37,11 +38,23 @@ func TestHandleCommand(t *testing.T) {
 				protocol.BulkString{Data: protocol.Ptr("bar")},
 				protocol.BulkString{Data: protocol.Ptr("baz")}}},
 			expected: protocol.Error{Data: "ERR unknown command 'foo', with args beginning with: 'bar' 'baz'"}},
+		"Set with 2 too few args": {
+			in:       protocol.Array{Items: []protocol.Resp{protocol.BulkString{Data: protocol.Ptr("set")}}},
+			expected: protocol.Error{Data: "ERR syntax error"}},
+		"Set with 1 too few args": {
+			in:       protocol.Array{Items: []protocol.Resp{protocol.BulkString{Data: protocol.Ptr("set")}, protocol.BulkString{Data: protocol.Ptr("key1")}}},
+			expected: protocol.Error{Data: "ERR syntax error"}},
+		"Set with existing key": {
+			in:       protocol.Array{Items: []protocol.Resp{protocol.BulkString{Data: protocol.Ptr("set")}, protocol.BulkString{Data: protocol.Ptr("key")}, protocol.BulkString{Data: protocol.Ptr("value")}}},
+			expected: protocol.SimpleString{Data: "OK"}},
+		"Set with non existent key": {
+			in:       protocol.Array{Items: []protocol.Resp{protocol.BulkString{Data: protocol.Ptr("set")}, protocol.BulkString{Data: protocol.Ptr("key1")}, protocol.BulkString{Data: protocol.Ptr("value1")}}},
+			expected: protocol.SimpleString{Data: "OK"}},
 	}
-
+	ds := datastore.NewDatastore()
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			got, err := HandleCommand(test.in)
+			got, err := HandleCommand(test.in, ds)
 			if err != nil {
 				t.Errorf("HandleCommand() error = %v", err)
 			}
