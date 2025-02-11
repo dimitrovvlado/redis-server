@@ -22,9 +22,8 @@ func (d *Datastore) Set(key, value string) {
 }
 
 func (d *Datastore) Get(key string) (string, error) {
-	l := d.mu.RLocker()
-	l.Lock()
-	defer l.Unlock()
+	d.mu.RLock()
+	defer d.mu.RUnlock()
 
 	value, ok := d.data[key]
 	if ok {

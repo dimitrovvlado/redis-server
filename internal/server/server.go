@@ -23,6 +23,7 @@ func Serve(host string, port int, ds *datastore.Datastore) error {
 		if err != nil {
 			log.Fatalf("Failed to establish a connection with the client: %v", err.Error())
 		}
+		defer conn.Close()
 		go handleConnection(conn, ds)
 	}
 }
