@@ -50,6 +50,72 @@ func TestHandleCommand(t *testing.T) {
 		"Set with non existent key": {
 			in:       protocol.Array{Items: []protocol.Resp{protocol.BulkString{Data: protocol.Ptr("set")}, protocol.BulkString{Data: protocol.Ptr("key1")}, protocol.BulkString{Data: protocol.Ptr("value1")}}},
 			expected: protocol.SimpleString{Data: "OK"}},
+		"Set EX Error": {
+			in: protocol.Array{Items: []protocol.Resp{
+				protocol.BulkString{Data: protocol.Ptr("set")},
+				protocol.BulkString{Data: protocol.Ptr("k")},
+				protocol.BulkString{Data: protocol.Ptr("v")},
+				protocol.BulkString{Data: protocol.Ptr("EX")},
+			}},
+			expected: protocol.Error{Data: "ERR wrong number of arguments for 'set' command"},
+		},
+		"Set PX Error": {
+			in: protocol.Array{Items: []protocol.Resp{
+				protocol.BulkString{Data: protocol.Ptr("set")},
+				protocol.BulkString{Data: protocol.Ptr("k")},
+				protocol.BulkString{Data: protocol.Ptr("v")},
+				protocol.BulkString{Data: protocol.Ptr("PX")},
+			}},
+			expected: protocol.Error{Data: "ERR wrong number of arguments for 'set' command"},
+		},
+		"Set Invalid Expiry Type": {
+			in: protocol.Array{Items: []protocol.Resp{
+				protocol.BulkString{Data: protocol.Ptr("set")},
+				protocol.BulkString{Data: protocol.Ptr("k")},
+				protocol.BulkString{Data: protocol.Ptr("v")},
+				protocol.BulkString{Data: protocol.Ptr("MADEUPX")},
+				protocol.BulkString{Data: protocol.Ptr("1")},
+			}},
+			expected: protocol.Error{Data: "ERR syntax error"},
+		},
+		"Set Invalid Expiry Value": {
+			in: protocol.Array{Items: []protocol.Resp{
+				protocol.BulkString{Data: protocol.Ptr("set")},
+				protocol.BulkString{Data: protocol.Ptr("k")},
+				protocol.BulkString{Data: protocol.Ptr("v")},
+				protocol.BulkString{Data: protocol.Ptr("PX")},
+				protocol.BulkString{Data: protocol.Ptr("ten")},
+			}},
+			expected: protocol.Error{Data: "ERR value is not an integer or out of range"},
+		},
+		"Set EXAT Error": {
+			in: protocol.Array{Items: []protocol.Resp{
+				protocol.BulkString{Data: protocol.Ptr("set")},
+				protocol.BulkString{Data: protocol.Ptr("k")},
+				protocol.BulkString{Data: protocol.Ptr("v")},
+				protocol.BulkString{Data: protocol.Ptr("EXAT")},
+			}},
+			expected: protocol.Error{Data: "ERR wrong number of arguments for 'set' command"},
+		},
+		"Set PXAT Error": {
+			in: protocol.Array{Items: []protocol.Resp{
+				protocol.BulkString{Data: protocol.Ptr("set")},
+				protocol.BulkString{Data: protocol.Ptr("k")},
+				protocol.BulkString{Data: protocol.Ptr("v")},
+				protocol.BulkString{Data: protocol.Ptr("PXAT")},
+			}},
+			expected: protocol.Error{Data: "ERR wrong number of arguments for 'set' command"},
+		},
+		"Set Invalid EXAT Expiry Value": {
+			in: protocol.Array{Items: []protocol.Resp{
+				protocol.BulkString{Data: protocol.Ptr("set")},
+				protocol.BulkString{Data: protocol.Ptr("k")},
+				protocol.BulkString{Data: protocol.Ptr("v")},
+				protocol.BulkString{Data: protocol.Ptr("EXAT")},
+				protocol.BulkString{Data: protocol.Ptr("-1")},
+			}},
+			expected: protocol.Error{Data: "ERR value is not an integer or out of range"},
+		},
 	}
 	ds := datastore.NewDatastore()
 	for name, test := range tests {

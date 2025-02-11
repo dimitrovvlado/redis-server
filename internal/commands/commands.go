@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strconv"
 	"strings"
 
 	"github.com/dimitrovvlado/redis-server/internal/datastore"
@@ -62,13 +63,44 @@ func handleUnknownCommand(c string, args []protocol.Resp) protocol.Resp {
 }
 
 func handleSetCommand(args []protocol.Resp, ds *datastore.Datastore) protocol.Resp {
-	if len(args) != 2 {
-		return protocol.Error{Data: "ERR wrong number of arguments for 'set' command"}
+	len := len(args)
+
+	if len >= 2 {
+		key := args[0].String()
+		val := args[1].String()
+		if len == 2 {
+			ds.Set(key, val)
+			return protocol.SimpleString{Data: "OK"}
+		} else if len == 4 {
+			expMode := strings.ToUpper(args[2].String())
+			exp, err := strconv.ParseInt(args[3].String(), 10, 64)
+			if err != nil || exp <= 0 {
+				return protocol.Error{Data: "ERR value is not an integer or out of range"}
+			}
+			switch expMode {
+			case "EX":
+				//Set the specified expire time, in seconds
+				ds.SetWithExpiry(key, val, exp*1000)
+				return protocol.SimpleString{Data: "OK"}
+			case "PX":
+				//Set the specified expire time, in milliseconds
+				ds.SetWithExpiry(key, val, exp)
+				return protocol.SimpleString{Data: "OK"}
+			case "EXAT":
+				//Set the specified Unix time at which the key will expire, in seconds
+				ds.SetWithExactExpiry(key, val, exp*1000)
+				return protocol.SimpleString{Data: "OK"}
+			case "PXAT":
+				//Set the specified Unix time at which the key will expire, in milliseconds
+				ds.SetWithExactExpiry(key, val, exp)
+				return protocol.SimpleString{Data: "OK"}
+			default:
+				return protocol.Error{Data: "ERR syntax error"}
+			}
+		}
 	}
-	key := args[0].String()
-	val := args[1].String()
-	ds.Set(key, val)
-	return protocol.SimpleString{Data: "OK"}
+
+	return protocol.Error{Data: "ERR wrong number of arguments for 'set' command"}
 }
 
 func handleGetCommand(args []protocol.Resp, ds *datastore.Datastore) protocol.Resp {

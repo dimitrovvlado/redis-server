@@ -3,6 +3,7 @@ package datastore
 import (
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestSetAndGetFromDatastore(t *testing.T) {
@@ -31,5 +32,39 @@ func TestSetAndGetFromDatastore(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestSetWithExpiry(t *testing.T) {
+	ds := NewDatastore()
+	ds.SetWithExpiry("key", "value", 500) //expire in 500 millis
+	got, err := ds.Get("key")
+	if err != nil {
+		t.Errorf("Unexpected error %v", err)
+	}
+	if got != "value" {
+		t.Errorf("Expected 'value', got '%s'", got)
+	}
+	time.Sleep(500 * time.Millisecond)
+	_, err = ds.Get("key")
+	if err == nil {
+		t.Errorf("Key has not expired, but it should have")
+	}
+}
+
+func TestSetWithExactExpiry(t *testing.T) {
+	ds := NewDatastore()
+	ds.SetWithExactExpiry("key", "value", time.Now().Add(500*time.Millisecond).UnixMilli()) //expire in 500 millis
+	got, err := ds.Get("key")
+	if err != nil {
+		t.Errorf("Unexpected error %v", err)
+	}
+	if got != "value" {
+		t.Errorf("Expected 'value', got '%s'", got)
+	}
+	time.Sleep(500 * time.Millisecond)
+	_, err = ds.Get("key")
+	if err == nil {
+		t.Errorf("Key has not expired, but it should have")
 	}
 }
