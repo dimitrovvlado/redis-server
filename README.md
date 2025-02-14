@@ -2,6 +2,7 @@
 A redis server/CLI implementation, compatible with the [RESP](https://redis.io/docs/latest/develop/reference/protocol-spec/) protocol.
 
 Start the server by running `make run-server`
+
 Run the CLI by executing `make run-cli`
 
 ### Available commands
