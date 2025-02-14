@@ -2,14 +2,14 @@ package protocol
 
 import (
 	"bytes"
-	"fmt"
 	"strconv"
 	"strings"
 )
 
 var (
-	messageSeparator = []byte("\r\n")
-	separatorLen     = len(messageSeparator)
+	messageSeparatorS = "\r\n"
+	messageSeparator  = []byte(messageSeparatorS)
+	separatorLen      = len(messageSeparator)
 )
 
 type Resp interface {
@@ -49,9 +49,11 @@ type Array struct {
 }
 
 func (r SimpleString) Encode() []byte {
-	prefix := "+"
+	prefix := '+'
 	var buf bytes.Buffer
-	fmt.Fprintf(&buf, "%s%s%s", prefix, r.Data, messageSeparator)
+	buf.WriteRune(prefix)
+	buf.WriteString(r.Data)
+	buf.WriteString(messageSeparatorS)
 	return buf.Bytes()
 }
 
@@ -60,9 +62,11 @@ func (r SimpleString) String() string {
 }
 
 func (r Error) Encode() []byte {
-	prefix := "-"
+	prefix := '-'
 	var buf bytes.Buffer
-	fmt.Fprintf(&buf, "%s%s%s", prefix, r.Data, messageSeparator)
+	buf.WriteRune(prefix)
+	buf.WriteString(r.Data)
+	buf.WriteString(messageSeparatorS)
 	return buf.Bytes()
 }
 
@@ -71,9 +75,11 @@ func (r Error) String() string {
 }
 
 func (r Integer) Encode() []byte {
-	prefix := ":"
+	prefix := ':'
 	var buf bytes.Buffer
-	fmt.Fprintf(&buf, "%s%d%s", prefix, r.Value, messageSeparator)
+	buf.WriteRune(prefix)
+	buf.WriteString(string(strconv.AppendInt(nil, r.Value, 10)))
+	buf.WriteString(messageSeparatorS)
 	return buf.Bytes()
 }
 
@@ -82,12 +88,18 @@ func (r Integer) String() string {
 }
 
 func (r BulkString) Encode() []byte {
-	prefix := "$"
+	prefix := '$'
 	var buf bytes.Buffer
 	if r.Data != nil {
-		fmt.Fprintf(&buf, "%s%d%s%s%s", prefix, len(*r.Data), messageSeparator, *r.Data, messageSeparator)
+		buf.WriteRune(prefix)
+		buf.WriteString(strconv.Itoa(len(*r.Data)))
+		buf.WriteString(messageSeparatorS)
+		buf.WriteString(*r.Data)
+		buf.WriteString(messageSeparatorS)
 	} else {
-		fmt.Fprintf(&buf, "%s-1%s", prefix, messageSeparator)
+		buf.WriteRune(prefix)
+		buf.WriteString(strconv.Itoa(-1))
+		buf.WriteString(messageSeparatorS)
 	}
 	return buf.Bytes()
 }
@@ -97,16 +109,19 @@ func (r BulkString) String() string {
 }
 
 func (r Array) Encode() []byte {
-	prefix := "*"
+	prefix := '*'
 	var buf bytes.Buffer
+	buf.WriteRune(prefix)
 	if r.Items != nil {
-		fmt.Fprintf(&buf, "%s%d%s", prefix, len(r.Items), messageSeparator)
+		buf.WriteString(strconv.Itoa(len(r.Items)))
+		buf.WriteString(messageSeparatorS)
 		for _, item := range r.Items {
 			enc := item.Encode()
 			buf.Write(enc)
 		}
 	} else {
-		fmt.Fprintf(&buf, "%s-1%s", prefix, messageSeparator)
+		buf.WriteString(strconv.Itoa(-1))
+		buf.WriteString(messageSeparatorS)
 	}
 	return buf.Bytes()
 }
