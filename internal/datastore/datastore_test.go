@@ -1,6 +1,7 @@
 package datastore
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -66,5 +67,44 @@ func TestSetWithExactExpiry(t *testing.T) {
 	_, err = ds.Get("key")
 	if err == nil {
 		t.Errorf("Key has not expired, but it should have")
+	}
+}
+
+func TestExpiryCheck(t *testing.T) {
+	ds := NewDatastore()
+	for i := range 100 { //100 permanent keys
+		key := fmt.Sprintf("key%d", i)
+		ds.Set(key, "value")
+	}
+	for i := range 100 { //100 perishable keys
+		key := fmt.Sprintf("key%d", i+100)
+		ds.SetWithExactExpiry(key, "value", time.Now().Add(1*time.Millisecond).UnixMilli())
+	}
+	if len(ds.data) != 200 {
+		t.Errorf("Expected 200 items, got %d", len(ds.data))
+	}
+	ds.ExpiryCheck() //should remove 20 items by default
+	if len(ds.data) != 180 {
+		t.Errorf("Expected 180 items, got %d", len(ds.data))
+	}
+}
+
+func TestStartExpiryCheck(t *testing.T) {
+	ds := NewDatastore()
+	for i := range 100 {
+		key := fmt.Sprintf("key%d", i)
+		ds.Set(key, "value")
+	}
+	for i := range 100 {
+		key := fmt.Sprintf("key%d", i+100)
+		ds.SetWithExactExpiry(key, "value", time.Now().Add(1*time.Millisecond).UnixMilli())
+	}
+	if len(ds.data) != 200 {
+		t.Errorf("Expected 200 items, got %d", len(ds.data))
+	}
+	go ds.StartExpiryCheck()
+	time.Sleep(2 * time.Second)
+	if len(ds.data) != 100 {
+		t.Errorf("Expected 100 items, got %d", len(ds.data))
 	}
 }

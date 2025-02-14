@@ -16,6 +16,7 @@ func main() {
 	flag.Parse()
 
 	ds := datastore.NewDatastore()
+	go ds.StartExpiryCheck()
 
 	err := server.Serve(*host, *port, ds)
 	if err != nil {

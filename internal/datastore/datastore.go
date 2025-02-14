@@ -8,8 +8,9 @@ import (
 )
 
 type Datastore struct {
-	mu   sync.RWMutex
-	data map[string]*Entry
+	mu           sync.RWMutex
+	data         map[string]*Entry
+	expChunkSize int
 }
 
 // Entry is a struct that holds the value and the metadata related to it
@@ -20,7 +21,7 @@ type Entry struct {
 }
 
 func NewDatastore() *Datastore {
-	return &Datastore{data: make(map[string]*Entry)}
+	return &Datastore{data: make(map[string]*Entry), expChunkSize: 20}
 }
 
 func (d *Datastore) Set(key, value string) {
@@ -46,13 +47,28 @@ func (d *Datastore) SetWithExactExpiry(key, value string, expiry int64) {
 	d.data[key] = newEntry(value, expiry)
 }
 
-func (d *Datastore) CheckExpiredKeys() {
+func (d *Datastore) StartExpiryCheck() {
+	for {
+		//TODO pause checks if no new keys are added
+		d.ExpiryCheck()
+		time.Sleep(100 * time.Millisecond)
+	}
+}
+
+func (d *Datastore) ExpiryCheck() {
 	keys := make([]string, 0)
 	d.mu.RLock()
+	keyCount := len(d.data)
+	sampleSize := min(d.expChunkSize, keyCount)
 	//copy the keys who have a set expiry
 	for k := range maps.Keys(d.data) {
 		if d.data[k].Expiry != -1 {
-			keys = append(keys, k)
+			if sampleSize > 0 {
+				keys = append(keys, k)
+				sampleSize -= 1
+			} else {
+				break
+			}
 		}
 	}
 	d.mu.RUnlock()
@@ -62,7 +78,6 @@ func (d *Datastore) CheckExpiredKeys() {
 		delete(d.data, k)
 		d.mu.Unlock()
 	}
-
 }
 
 func (d *Datastore) Get(key string) (string, error) {
