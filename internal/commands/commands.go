@@ -27,6 +27,10 @@ func HandleCommand(resp protocol.Resp, ds *datastore.Datastore) (protocol.Resp, 
 			return handleSetCommand(args, ds), nil
 		case "get":
 			return handleGetCommand(args, ds), nil
+		case "del":
+			return handleDelCommand(args, ds), nil
+		case "exists":
+			return handleExistsCommand(args, ds), nil
 		default:
 			return handleUnknownCommand(cmdS, args), nil
 		}
@@ -113,4 +117,30 @@ func handleGetCommand(args []protocol.Resp, ds *datastore.Datastore) protocol.Re
 		return protocol.BulkString{Data: nil}
 	}
 	return protocol.BulkString{Data: protocol.Ptr(fmt.Sprintf("%s", val))}
+}
+
+func handleDelCommand(args []protocol.Resp, ds *datastore.Datastore) protocol.Resp {
+	if len(args) < 1 {
+		return protocol.Error{Data: "ERR wrong number of arguments for 'del' command"}
+	}
+	var cnt int64
+	for _, k := range args {
+		if err := ds.Delete(k.String()); err == nil {
+			cnt += 1
+		}
+	}
+	return protocol.Integer{Value: cnt}
+}
+
+func handleExistsCommand(args []protocol.Resp, ds *datastore.Datastore) protocol.Resp {
+	if len(args) < 1 {
+		return protocol.Error{Data: "ERR wrong number of arguments for 'exists' command"}
+	}
+	var cnt int64
+	for _, k := range args {
+		if _, err := ds.Get(k.String()); err == nil {
+			cnt += 1
+		}
+	}
+	return protocol.Integer{Value: cnt}
 }

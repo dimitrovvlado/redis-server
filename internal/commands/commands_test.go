@@ -130,3 +130,106 @@ func TestHandleCommand(t *testing.T) {
 		})
 	}
 }
+
+func TestExistsCommand(t *testing.T) {
+	tests := map[string]struct {
+		in       protocol.Resp
+		expected protocol.Resp
+	}{
+		"Exists with too few args": {
+			in: protocol.Array{Items: []protocol.Resp{
+				protocol.BulkString{Data: protocol.Ptr("Exists")}}},
+			expected: protocol.Error{Data: "ERR wrong number of arguments for 'exists' command"}},
+		"Exists with valid key": {
+			in: protocol.Array{Items: []protocol.Resp{
+				protocol.BulkString{Data: protocol.Ptr("Exists")},
+				protocol.BulkString{Data: protocol.Ptr("key")}}},
+			expected: protocol.Integer{Value: 1}},
+		"Exists with non existent key": {
+			in: protocol.Array{Items: []protocol.Resp{
+				protocol.BulkString{Data: protocol.Ptr("Exists")},
+				protocol.BulkString{Data: protocol.Ptr("invalid key")}}},
+			expected: protocol.Integer{Value: 0}},
+		"Exists with multiple keys": {
+			in: protocol.Array{Items: []protocol.Resp{
+				protocol.BulkString{Data: protocol.Ptr("Exists")},
+				protocol.BulkString{Data: protocol.Ptr("key")},
+				protocol.BulkString{Data: protocol.Ptr("keyexists")},
+				protocol.BulkString{Data: protocol.Ptr("invalid key")},
+			}},
+			expected: protocol.Integer{Value: 2}},
+	}
+
+	// Test Datastore
+	ds := datastore.NewDatastore()
+	ds.Set("key", "val")
+	ds.Set("keyexists", "valexists")
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			got, err := HandleCommand(test.in, ds)
+			if err != nil {
+				t.Errorf("HandleCommand() error = %v", err)
+			}
+			if !reflect.DeepEqual(got, test.expected) {
+				t.Errorf("expected: %v, got: %v", test.expected, got)
+			}
+		})
+	}
+}
+
+func TestDeleteCommand(t *testing.T) {
+	tests := map[string]struct {
+		in       protocol.Resp
+		expected protocol.Resp
+	}{
+		"Too few args": {
+			in: protocol.Array{Items: []protocol.Resp{
+				protocol.BulkString{Data: protocol.Ptr("DEL")},
+			}},
+			expected: protocol.Error{Data: "ERR wrong number of arguments for 'del' command"}},
+		"Key not present": {
+			in: protocol.Array{Items: []protocol.Resp{
+				protocol.BulkString{Data: protocol.Ptr("DEL")},
+				protocol.BulkString{Data: protocol.Ptr("invalid key")},
+			}},
+			expected: protocol.Integer{Value: 0}},
+		"One key there, one not": {
+			in: protocol.Array{Items: []protocol.Resp{
+				protocol.BulkString{Data: protocol.Ptr("DEL")},
+				protocol.BulkString{Data: protocol.Ptr("key")},
+				protocol.BulkString{Data: protocol.Ptr("invalid key")},
+			}},
+			expected: protocol.Integer{Value: 1}},
+		"Multiple keys there, multiple not": {
+			in: protocol.Array{Items: []protocol.Resp{
+				protocol.BulkString{Data: protocol.Ptr("DEL")},
+				protocol.BulkString{Data: protocol.Ptr("k1")},
+				protocol.BulkString{Data: protocol.Ptr("invalid key1")},
+				protocol.BulkString{Data: protocol.Ptr("k2")},
+				protocol.BulkString{Data: protocol.Ptr("invalid key3")},
+				protocol.BulkString{Data: protocol.Ptr("k3")},
+				protocol.BulkString{Data: protocol.Ptr("k4")},
+			}},
+			expected: protocol.Integer{Value: 4}},
+	}
+	// Test Datastore
+	ds := datastore.NewDatastore()
+	ds.Set("key", "val")
+	ds.Set("k1", "v1")
+	ds.Set("k2", "v2")
+	ds.Set("k3", "v3")
+	ds.Set("k4", "v4")
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			got, err := HandleCommand(test.in, ds)
+			if err != nil {
+				t.Errorf("HandleCommand() error = %v", err)
+			}
+			if !reflect.DeepEqual(got, test.expected) {
+				t.Errorf("expected: %v, got: %v", test.expected, got)
+			}
+		})
+	}
+}

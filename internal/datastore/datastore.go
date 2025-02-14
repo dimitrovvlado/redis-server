@@ -92,6 +92,16 @@ func (d *Datastore) Get(key string) (string, error) {
 	return "", errors.New("not found")
 }
 
+func (d *Datastore) Delete(key string) error {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if _, ok := d.data[key]; ok {
+		delete(d.data, key)
+		return nil
+	}
+	return errors.New("not found")
+}
+
 func newEntry(value string, expiry int64) *Entry {
 	return &Entry{Value: value, Expiry: expiry}
 }

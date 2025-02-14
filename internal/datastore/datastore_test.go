@@ -108,3 +108,16 @@ func TestStartExpiryCheck(t *testing.T) {
 		t.Errorf("Expected 100 items, got %d", len(ds.data))
 	}
 }
+
+func TestDelete(t *testing.T) {
+	ds := NewDatastore()
+	ds.Set("key", "value")
+	err := ds.Delete("key")
+	if err != nil {
+		t.Errorf("Expected item to be deleted")
+	}
+	err = ds.Delete("key")
+	if err == nil {
+		t.Errorf("Expected: no item to be deleted")
+	}
+}
