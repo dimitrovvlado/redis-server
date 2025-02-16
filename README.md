@@ -36,3 +36,13 @@ DEL key [key ...]
 ```
 EXISTS key [key ...]
 ```
+
+**INCR**
+```
+INCR key
+```
+
+**DECR**
+```
+DECR key
+```

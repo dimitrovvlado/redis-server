@@ -233,3 +233,123 @@ func TestDeleteCommand(t *testing.T) {
 		})
 	}
 }
+
+func TestIncrCommand(t *testing.T) {
+	tests := map[string]struct {
+		in       protocol.Resp
+		expected protocol.Resp
+	}{
+		"Not enough args": {
+			in: protocol.Array{Items: []protocol.Resp{
+				protocol.BulkString{Data: protocol.Ptr("incr")},
+			}},
+			expected: protocol.Error{Data: "ERR wrong number of arguments for 'incr' command"}},
+		"Too many args": {
+			in: protocol.Array{Items: []protocol.Resp{
+				protocol.BulkString{Data: protocol.Ptr("incr")},
+				protocol.BulkString{Data: protocol.Ptr("key1")},
+				protocol.BulkString{Data: protocol.Ptr("key2")},
+			}},
+			expected: protocol.Error{Data: "ERR wrong number of arguments for 'incr' command"}},
+		"None existent key": {
+			in: protocol.Array{Items: []protocol.Resp{
+				protocol.BulkString{Data: protocol.Ptr("incr")},
+				protocol.BulkString{Data: protocol.Ptr("key")},
+			}},
+			expected: protocol.Error{Data: "ERR value is not an integer or out of range"}},
+		"Key with string val": {
+			in: protocol.Array{Items: []protocol.Resp{
+				protocol.BulkString{Data: protocol.Ptr("incr")},
+				protocol.BulkString{Data: protocol.Ptr("keystring")},
+			}},
+			expected: protocol.Error{Data: "ERR value is not an integer or out of range"}},
+		"Key with int val": {
+			in: protocol.Array{Items: []protocol.Resp{
+				protocol.BulkString{Data: protocol.Ptr("incr")},
+				protocol.BulkString{Data: protocol.Ptr("keyint")},
+			}},
+			expected: protocol.Integer{Value: 2}},
+		"Key with negative int val": {
+			in: protocol.Array{Items: []protocol.Resp{
+				protocol.BulkString{Data: protocol.Ptr("incr")},
+				protocol.BulkString{Data: protocol.Ptr("keyintneg")},
+			}},
+			expected: protocol.Integer{Value: -2}},
+	}
+	ds := datastore.NewDatastore()
+	ds.Set("keystring", "one")
+	ds.Set("keyint", "1")
+	ds.Set("keyintneg", "-3")
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			got, err := HandleCommand(test.in, ds)
+			if err != nil {
+				t.Errorf("handleIncrCommand() error = %v", err)
+			}
+			if got != test.expected {
+				t.Errorf("expected: %v, got: %v", test.expected, got)
+			}
+		})
+	}
+}
+
+func TestDecrCommand(t *testing.T) {
+	tests := map[string]struct {
+		in       protocol.Resp
+		expected protocol.Resp
+	}{
+		"Not enough args": {
+			in: protocol.Array{Items: []protocol.Resp{
+				protocol.BulkString{Data: protocol.Ptr("decr")},
+			}},
+			expected: protocol.Error{Data: "ERR wrong number of arguments for 'decr' command"}},
+		"Too many args": {
+			in: protocol.Array{Items: []protocol.Resp{
+				protocol.BulkString{Data: protocol.Ptr("decr")},
+				protocol.BulkString{Data: protocol.Ptr("key1")},
+				protocol.BulkString{Data: protocol.Ptr("key2")},
+			}},
+			expected: protocol.Error{Data: "ERR wrong number of arguments for 'decr' command"}},
+		"None existent key": {
+			in: protocol.Array{Items: []protocol.Resp{
+				protocol.BulkString{Data: protocol.Ptr("decr")},
+				protocol.BulkString{Data: protocol.Ptr("key")},
+			}},
+			expected: protocol.Error{Data: "ERR value is not an integer or out of range"}},
+		"Key with string val": {
+			in: protocol.Array{Items: []protocol.Resp{
+				protocol.BulkString{Data: protocol.Ptr("decr")},
+				protocol.BulkString{Data: protocol.Ptr("keystring")},
+			}},
+			expected: protocol.Error{Data: "ERR value is not an integer or out of range"}},
+		"Key with int val": {
+			in: protocol.Array{Items: []protocol.Resp{
+				protocol.BulkString{Data: protocol.Ptr("decr")},
+				protocol.BulkString{Data: protocol.Ptr("keyint")},
+			}},
+			expected: protocol.Integer{Value: 1}},
+		"Key with negative int val": {
+			in: protocol.Array{Items: []protocol.Resp{
+				protocol.BulkString{Data: protocol.Ptr("decr")},
+				protocol.BulkString{Data: protocol.Ptr("keyintneg")},
+			}},
+			expected: protocol.Integer{Value: -2}},
+	}
+	ds := datastore.NewDatastore()
+	ds.Set("keystring", "one")
+	ds.Set("keyint", "2")
+	ds.Set("keyintneg", "-1")
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			got, err := HandleCommand(test.in, ds)
+			if err != nil {
+				t.Errorf("handleIncrCommand() error = %v", err)
+			}
+			if got != test.expected {
+				t.Errorf("expected: %v, got: %v", test.expected, got)
+			}
+		})
+	}
+}

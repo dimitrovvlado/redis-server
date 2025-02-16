@@ -31,6 +31,10 @@ func HandleCommand(resp protocol.Resp, ds *datastore.Datastore) (protocol.Resp, 
 			return handleDelCommand(args, ds), nil
 		case "exists":
 			return handleExistsCommand(args, ds), nil
+		case "incr":
+			return handleIncrCommand(args, ds), nil
+		case "decr":
+			return handleDecrCommand(args, ds), nil
 		default:
 			return handleUnknownCommand(cmdS, args), nil
 		}
@@ -143,4 +147,28 @@ func handleExistsCommand(args []protocol.Resp, ds *datastore.Datastore) protocol
 		}
 	}
 	return protocol.Integer{Value: cnt}
+}
+
+func handleIncrCommand(args []protocol.Resp, ds *datastore.Datastore) protocol.Resp {
+	if len(args) != 1 {
+		return protocol.Error{Data: "ERR wrong number of arguments for 'incr' command"}
+	}
+	key := args[0].String()
+	v, err := ds.Increment(key)
+	if err != nil {
+		return protocol.Error{Data: "ERR value is not an integer or out of range"}
+	}
+	return protocol.Integer{Value: v}
+}
+
+func handleDecrCommand(args []protocol.Resp, ds *datastore.Datastore) protocol.Resp {
+	if len(args) != 1 {
+		return protocol.Error{Data: "ERR wrong number of arguments for 'decr' command"}
+	}
+	key := args[0].String()
+	v, err := ds.Decrement(key)
+	if err != nil {
+		return protocol.Error{Data: "ERR value is not an integer or out of range"}
+	}
+	return protocol.Integer{Value: v}
 }

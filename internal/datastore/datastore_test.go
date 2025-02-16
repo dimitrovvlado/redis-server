@@ -121,3 +121,61 @@ func TestDelete(t *testing.T) {
 		t.Errorf("Expected: no item to be deleted")
 	}
 }
+
+func TestIncrementNotPresent(t *testing.T) {
+	ds := NewDatastore()
+	_, err := ds.Increment("key")
+	if err == nil {
+		t.Errorf("Expected key not found error")
+	}
+}
+
+func TestIncrementPresent(t *testing.T) {
+	ds := NewDatastore()
+	ds.Set("key", "1")
+	val, err := ds.Increment("key")
+	if err != nil {
+		t.Errorf("Unexpected error occured: %v", err)
+	}
+	if val != 2 {
+		t.Errorf("Expected %d, got %d", 2, val)
+	}
+}
+
+func TestIncrementNotInt(t *testing.T) {
+	ds := NewDatastore()
+	ds.Set("key", "one")
+	_, err := ds.Increment("key")
+	if err == nil {
+		t.Errorf("Expected an error when incrementing a non-integer value")
+	}
+}
+
+func TestDecrementNotPresent(t *testing.T) {
+	ds := NewDatastore()
+	_, err := ds.Decrement("key")
+	if err == nil {
+		t.Errorf("Expected key not found error")
+	}
+}
+
+func TestDecrementPresent(t *testing.T) {
+	ds := NewDatastore()
+	ds.Set("key", "1")
+	val, err := ds.Decrement("key")
+	if err != nil {
+		t.Errorf("Unexpected error occured: %v", err)
+	}
+	if val != 0 {
+		t.Errorf("Expected %d, got %d", 0, val)
+	}
+}
+
+func TestDecrementNotInt(t *testing.T) {
+	ds := NewDatastore()
+	ds.Set("key", "one")
+	_, err := ds.Decrement("key")
+	if err == nil {
+		t.Errorf("Expected an error when decrementing a non-integer value")
+	}
+}

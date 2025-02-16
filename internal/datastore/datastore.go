@@ -2,22 +2,30 @@ package datastore
 
 import (
 	"errors"
+	"fmt"
 	"maps"
+	"strconv"
 	"sync"
 	"time"
 )
 
 type Datastore struct {
-	mu           sync.RWMutex
-	data         map[string]*Entry
+	mu   sync.RWMutex
+	data map[string]*Entry
+
 	expChunkSize int
 }
 
 // Entry is a struct that holds the value and the metadata related to it
 type Entry struct {
-	Value string
+	Value interface{}
 	//The expiration date in unix millis
 	Expiry int64
+}
+
+// KeyNotFoundError is an error struct which holds the missing key.
+type KeyNotFoundError struct {
+	key string
 }
 
 func NewDatastore() *Datastore {
@@ -86,7 +94,14 @@ func (d *Datastore) Get(key string) (string, error) {
 	if value, ok := d.data[key]; ok {
 		now := time.Now().UnixMilli()
 		if value.Expiry == -1 || now < value.Expiry {
-			return value.Value, nil
+			var ret string
+			switch value.Value.(type) {
+			case int64:
+				ret = fmt.Sprintf("%d", value.Value.(int64))
+			case string:
+				ret = value.Value.(string)
+			}
+			return ret, nil
 		}
 	}
 	return "", errors.New("not found")
@@ -102,6 +117,52 @@ func (d *Datastore) Delete(key string) error {
 	return errors.New("not found")
 }
 
-func newEntry(value string, expiry int64) *Entry {
+func (d *Datastore) Increment(key string) (int64, error) {
+	return d.sumWith(key, 1)
+}
+
+func (d *Datastore) Decrement(key string) (int64, error) {
+	return d.sumWith(key, -1)
+}
+
+func (d *Datastore) sumWith(key string, change int64) (int64, error) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	var val int64
+	var exp int64 = -1
+	value, ok := d.data[key]
+	if ok {
+		switch value.Value.(type) {
+		case int64:
+			val = value.Value.(int64)
+		case string:
+			var err error
+			val, err = strconv.ParseInt(value.Value.(string), 10, 64)
+			if err != nil {
+				return 0, err
+			}
+		}
+		val += change
+		exp = value.Expiry
+		newEntry := Entry{Value: val, Expiry: exp}
+		d.data[key] = &newEntry
+		return val, nil
+	}
+	return 0, KeyNotFoundError{key: key}
+}
+
+func (e KeyNotFoundError) Error() string {
+	return fmt.Sprintf("%s not found in datastore", e.key)
+}
+
+func newEntry(value interface{}, expiry int64) *Entry {
+	switch value.(type) {
+	case string:
+		v, err := strconv.ParseInt(value.(string), 10, 64)
+		if err == nil {
+			return &Entry{Value: v, Expiry: expiry}
+		}
+
+	}
 	return &Entry{Value: value, Expiry: expiry}
 }
