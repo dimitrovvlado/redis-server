@@ -256,7 +256,7 @@ func TestIncrCommand(t *testing.T) {
 				protocol.BulkString{Data: protocol.Ptr("incr")},
 				protocol.BulkString{Data: protocol.Ptr("key")},
 			}},
-			expected: protocol.Error{Data: "ERR value is not an integer or out of range"}},
+			expected: protocol.Integer{Value: 1}},
 		"Key with string val": {
 			in: protocol.Array{Items: []protocol.Resp{
 				protocol.BulkString{Data: protocol.Ptr("incr")},
@@ -316,7 +316,7 @@ func TestDecrCommand(t *testing.T) {
 				protocol.BulkString{Data: protocol.Ptr("decr")},
 				protocol.BulkString{Data: protocol.Ptr("key")},
 			}},
-			expected: protocol.Error{Data: "ERR value is not an integer or out of range"}},
+			expected: protocol.Integer{Value: -1}},
 		"Key with string val": {
 			in: protocol.Array{Items: []protocol.Resp{
 				protocol.BulkString{Data: protocol.Ptr("decr")},

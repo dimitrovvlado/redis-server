@@ -147,8 +147,11 @@ func (d *Datastore) sumWith(key string, change int64) (int64, error) {
 		newEntry := Entry{Value: val, Expiry: exp}
 		d.data[key] = &newEntry
 		return val, nil
+	} else {
+		v := 0 + change
+		d.data[key] = newEntry(v, -1)
+		return v, nil
 	}
-	return 0, KeyNotFoundError{key: key}
 }
 
 func (e KeyNotFoundError) Error() string {

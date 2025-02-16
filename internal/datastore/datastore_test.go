@@ -124,9 +124,12 @@ func TestDelete(t *testing.T) {
 
 func TestIncrementNotPresent(t *testing.T) {
 	ds := NewDatastore()
-	_, err := ds.Increment("key")
-	if err == nil {
-		t.Errorf("Expected key not found error")
+	val, err := ds.Increment("key")
+	if err != nil {
+		t.Errorf("Unexpected error occured: %v", err)
+	}
+	if val != 1 {
+		t.Errorf("Expected %d, got %d", 2, val)
 	}
 }
 
@@ -153,9 +156,12 @@ func TestIncrementNotInt(t *testing.T) {
 
 func TestDecrementNotPresent(t *testing.T) {
 	ds := NewDatastore()
-	_, err := ds.Decrement("key")
-	if err == nil {
-		t.Errorf("Expected key not found error")
+	val, err := ds.Decrement("key")
+	if err != nil {
+		t.Errorf("Unexpected error occured: %v", err)
+	}
+	if val != -1 {
+		t.Errorf("Expected %d, got %d", 2, val)
 	}
 }
 
